@@ -23,7 +23,6 @@ type NetTableService struct {
 	blackList *lru.Cache
 	seen      *lru.Cache
 	peers     *lru.Cache
-	connected map[string]bool
 	mutex 	  sync.Mutex
 
 	heartbeatTicker <-chan time.Time
@@ -35,7 +34,6 @@ func (nt *NetTableService) Init(ctx context.Context, ln *LocalNode) error {
 	nt.logger = logger.New("NetTable")
 	nt.localNode = ln
 	nt.context = ctx
-	nt.connected = make(map[string]bool)
 	nt.newConn = make(chan *net.UDPAddr, CONCCURENT_NEW_CONNECTION*2)
 	var err error
 	nt.blackList, err = lru.New(1000)
@@ -167,13 +165,17 @@ func (nt *NetTableService) Discovered(addr *net.UDPAddr) {
 }
 
 func (nt *NetTableService) AddRemoteNode(rn *RemoteNode) {
-	addr := rn.conn.RemoteAddr().String()
-	if rn.id == "" || nt.connected[rn.id] {
+	nt.mutex.Lock()
+	defer nt.mutex.Unlock()
+	if rn.id == "" || nt.peers.Contains(rn.id) {
+		nt.logger.Warningf("Already connected to %s", rn.id)
 		rn.conn.Close()
 		return
 	}
-	nt.peers.Add(addr, rn)
-	nt.logger.Infof("Connected to %s", addr)
+
+	addr := rn.conn.RemoteAddr().String()
+	nt.peers.Add(rn.id, rn)
+	nt.logger.Infof("Connected to %s: %s", addr, rn.id)
 	go rn.listen(nt.localNode)
 	err := nt.Save()
 	if err != nil {
@@ -184,12 +186,13 @@ func (nt *NetTableService) AddRemoteNode(rn *RemoteNode) {
 func (nt *NetTableService) isConnected(id string) bool {
 	nt.mutex.Lock()
 	defer nt.mutex.Unlock()
-	return nt.connected[id]
+	return nt.peers.Contains(id)
 }
 
 func (nt *NetTableService) RemoveRemoteNode(rn *RemoteNode) {
-	nt.peers.Remove(rn.conn.RemoteAddr().String())
-	nt.connected[rn.id] = false
+	nt.mutex.Lock()
+	defer nt.mutex.Unlock()
+	nt.peers.Remove(rn.id)
 }
 
 func (nt *NetTableService) GetPeers() []*RemoteNode {
