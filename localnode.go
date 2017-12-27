@@ -8,6 +8,7 @@ import (
 	"github.com/rs/xid"
 	"github.com/golang/protobuf/proto"
 	"io"
+	"github.com/iain17/framed"
 )
 
 type LocalNode struct {
@@ -88,7 +89,7 @@ func (ln *LocalNode) sendPeerInfo(w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	return pb.Write(w, peerInfo)
+	return framed.Write(w, peerInfo)
 }
 
 func (ln *LocalNode) String() string {

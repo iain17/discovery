@@ -6,6 +6,7 @@ import (
 	"github.com/iain17/logger"
 	"github.com/golang/protobuf/proto"
 	"github.com/hashicorp/golang-lru"
+	ttlru "github.com/Akagi201/kvcache/ttlru"
 	"errors"
 	"io/ioutil"
 	"net"
@@ -20,8 +21,8 @@ type NetTableService struct {
 	context   context.Context
 	newConn   chan *net.UDPAddr
 
-	blackList *lru.Cache
-	seen      *lru.Cache
+	blackList *ttlru.LruWithTTL
+	seen      *ttlru.LruWithTTL
 	peers     *lru.Cache
 	mutex 	  sync.Mutex
 
@@ -36,11 +37,11 @@ func (nt *NetTableService) Init(ctx context.Context, ln *LocalNode) error {
 	nt.context = ctx
 	nt.newConn = make(chan *net.UDPAddr, CONCCURENT_NEW_CONNECTION*2)
 	var err error
-	nt.blackList, err = lru.New(1000)
+	nt.blackList, err = ttlru.NewTTL(1000)
 	if err != nil {
 		return err
 	}
-	nt.seen, err = lru.New(1000)
+	nt.seen, err = ttlru.NewTTL(1000)
 	if err != nil {
 		return err
 	}
@@ -159,7 +160,7 @@ func (nt *NetTableService) Discovered(addr *net.UDPAddr) {
 	if nt.peers.Contains(key) {
 		return
 	}
-	nt.seen.Add(key, true)
+	nt.seen.AddWithTTL(key, true, 60 * time.Second)
 	nt.logger.Debugf("new potential peer %q discovered", addr)
 	nt.newConn <- addr
 }
@@ -253,7 +254,7 @@ func (nt *NetTableService) tryConnect(h *net.UDPAddr) error {
 //The black list is just a list of nodes we've already tried and or are connected to.
 //TODO: Fix that we don't connect to ourselves.
 func (nt *NetTableService) addToBlackList(h *net.UDPAddr) {
-	nt.blackList.Add(h.String(), 0)
+	nt.blackList.AddWithTTL(h.String(), 0, 10 * time.Minute)
 }
 
 func (nt *NetTableService) isBlackListed(h *net.UDPAddr) bool {
