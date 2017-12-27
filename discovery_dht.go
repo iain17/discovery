@@ -99,6 +99,9 @@ func (d *DiscoveryDHT) Run() {
 }
 
 func (d *DiscoveryDHT) request() {
+	if d.localNode.netTableService.isEnoughPeers() {
+		return
+	}
 	d.logger.Debugf("sending request '%s'", d.ih.String())
 	d.node.PeersRequest(string(d.ih), true)
 }
