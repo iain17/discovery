@@ -98,9 +98,9 @@ func (ln *LocalNode) String() string {
 
 //Will trigger updating the clients I'm connected to
 func (ln *LocalNode) SetInfo(key string, value string) {
-	if ln.info[key] == value {
-		return
-	}
+	//if ln.info[key] == value {
+	//	return
+	//}
 	ln.info[key] = value
 	for _, peer := range ln.netTableService.GetPeers() {
 		go ln.sendPeerInfo(peer.conn)

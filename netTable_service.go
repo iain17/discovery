@@ -6,7 +6,7 @@ import (
 	"github.com/iain17/logger"
 	"github.com/golang/protobuf/proto"
 	"github.com/hashicorp/golang-lru"
-	ttlru "github.com/Akagi201/kvcache/ttlru"
+	ttlru "github.com/iain17/kvcache/lttlru"
 	"errors"
 	"io/ioutil"
 	"net"
@@ -154,7 +154,7 @@ func (nt *NetTableService) Discovered(addr *net.UDPAddr) {
 		return
 	}
 	key := addr.String()
-	if nt.seen.Contains(key) {
+	if _, ok := nt.seen.Get(key); ok {
 		return
 	}
 	nt.seen.AddWithTTL(key, true, 15 * time.Minute)
