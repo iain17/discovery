@@ -81,18 +81,23 @@ func (d *DiscoveryIRC) Run() {
 		d.logger.Info("Stopping...")
 		d.Stop()
 	}()
-
+	retries := 0
 	for {
 		select {
 		case <-d.context.Done():
 			return
 		default:
 			if !d.connection.Connected() {
+				if retries > 10 {
+					return
+				}
+				time.Sleep(1 * time.Second)
 				d.logger.Warning("Reconnecting...")
 				err := d.connection.Connect(IRC_SERVER)
 				if err != nil {
 					d.logger.Error(err)
 				}
+				retries++
 				continue
 			}
 			d.Advertise()

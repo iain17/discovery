@@ -20,6 +20,9 @@ type DiscoveryDHT struct {
 }
 
 func (d *DiscoveryDHT) Init(ctx context.Context, ln *LocalNode) (err error) {
+	if ln.discovery.limited {
+		return
+	}
 	d.logger = logger.New("DiscoveryDHT")
 	d.localNode = ln
 	d.context = ctx
@@ -56,7 +59,7 @@ func (d *DiscoveryDHT) process() {
 		case <-d.context.Done():
 			return
 		default:
-			time.Sleep(10 * time.Second)//Give us time to find peers on other ways.
+			time.Sleep(10 * time.Second)//Give us time to find peers on other ways. Existing peers etc.
 			d.request()
 		}
 	}
@@ -91,7 +94,6 @@ func (d *DiscoveryDHT) Run() {
 							IP:   net.ParseIP(host),
 							Port: int(port-10),
 						}
-						d.logger.Debugf("Discovered: %v", addr)
 						go d.localNode.netTableService.Discovered(addr)
 					}
 				}
