@@ -35,13 +35,13 @@ func (nt *NetTableService) Init(ctx context.Context, ln *LocalNode) error {
 	nt.logger = logger.New("NetTable")
 	nt.localNode = ln
 	nt.context = ctx
-	nt.newConn = make(chan *net.UDPAddr, CONCCURENT_NEW_CONNECTION*2)
+	nt.newConn = make(chan *net.UDPAddr, BACKLOG_NEW_CONNECTION)
 	var err error
 	nt.blackList, err = ttlru.NewTTL(1000)
 	if err != nil {
 		return err
 	}
-	nt.seen, err = ttlru.NewTTL(4096)
+	nt.seen, err = ttlru.NewTTL(1024)
 	if err != nil {
 		return err
 	}
@@ -80,6 +80,13 @@ func (nt *NetTableService) processNewConnection() {
 		case <-nt.context.Done():
 			return
 		case host, ok := <-nt.newConn:
+			key := host.String()
+			if _, ok := nt.seen.Get(key); ok {
+				return
+			}
+			nt.seen.AddWithTTL(key, true, 15 * time.Minute)
+			nt.logger.Debugf("new potential peer %q discovered", host)
+
 			if !ok {
 				return
 			}
@@ -155,12 +162,6 @@ func (nt *NetTableService) Discovered(addr *net.UDPAddr) {
 	if addr.IP.String() == nt.localNode.ip && addr.Port == nt.localNode.port {
 		return
 	}
-	key := addr.String()
-	if _, ok := nt.seen.Get(key); ok {
-		return
-	}
-	nt.seen.AddWithTTL(key, true, 15 * time.Minute)
-	nt.logger.Debugf("new potential peer %q discovered", addr)
 	nt.newConn <- addr
 }
 

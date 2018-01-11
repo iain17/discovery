@@ -2,7 +2,8 @@ package discovery
 
 import "github.com/shibukawa/configdir"
 
-const CONCCURENT_NEW_CONNECTION = 10
+const CONCCURENT_NEW_CONNECTION = 50
+const BACKLOG_NEW_CONNECTION = 100
 const HEARTBEAT_DELAY = 30
 const PORT_RANGE = 1
 const IRC_SERVER = "chat.freenode.net:6697"
