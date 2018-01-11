@@ -28,7 +28,7 @@ func (d *DiscoveryDHT) Init(ctx context.Context, ln *LocalNode) (err error) {
 	d.context = ctx
 
 	cfg := dht.NewConfig()
-	cfg.Port = d.localNode.port+10
+	cfg.Port = d.localNode.port + PORT_RANGE
 	cfg.NumTargetPeers = d.localNode.discovery.max
 	cfg.MaxNodes = 100
 	d.node, err = dht.New(cfg)
@@ -92,7 +92,7 @@ func (d *DiscoveryDHT) Run() {
 						}
 						addr := &net.UDPAddr{
 							IP:   net.ParseIP(host),
-							Port: int(port-10),
+							Port: int(port-PORT_RANGE),
 						}
 						go d.localNode.netTableService.Discovered(addr)
 					}
