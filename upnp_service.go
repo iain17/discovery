@@ -15,12 +15,15 @@ type UPnPService struct {
 	context context.Context
 }
 
-func (s *UPnPService) Init(ctx context.Context, ln *LocalNode) error {
+func (s *UPnPService) init(ctx context.Context) error {
+	defer func() {
+		if s.localNode.wg != nil {
+			s.localNode.wg.Done()
+		}
+	}()
 	s.mapping = new(upnp.Upnp)
 	s.logger = logger.New("UpNp")
-	s.localNode = ln
 	s.context = ctx
-	go s.Run()
 	return nil
 }
 
@@ -28,7 +31,11 @@ func (s *UPnPService) Stop() {
 	s.mapping.DelPortMapping(s.localNode.port, "UDP")
 }
 
-func (s *UPnPService) Run() {
+func (s *UPnPService) Serve(ctx context.Context) {
+	if err := s.init(ctx); err != nil {
+		s.localNode.lastError = err
+		panic(err)
+	}
 	defer s.Stop()
 	for {
 		select {

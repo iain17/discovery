@@ -9,6 +9,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"io"
 	"github.com/iain17/framed"
+	"cirello.io/supervisor"
+	"sync"
 )
 
 type LocalNode struct {
@@ -16,6 +18,9 @@ type LocalNode struct {
 	discovery *Discovery
 	ip        string //Gets filled in by stun service.
 	port      int
+	wg		  *sync.WaitGroup
+	lastError error
+	supervisor supervisor.Supervisor
 	//Services
 	listenerService ListenerService
 	upNpService     UPnPService
@@ -28,7 +33,7 @@ type LocalNode struct {
 }
 
 func newLocalNode(discovery *Discovery) (*LocalNode, error) {
-	instance := &LocalNode{
+	i := &LocalNode{
 		Node: Node{
 			id:        xid.New().String(),
 			logger: logger.New("LocalNode"),
@@ -36,43 +41,31 @@ func newLocalNode(discovery *Discovery) (*LocalNode, error) {
 		},
 		discovery: discovery,
 		port:      freeport.GetPortRange("udp", PORT_RANGE),
+		wg: &sync.WaitGroup{},
 	}
-	err := instance.listenerService.Init(discovery.ctx, instance)
-	if err != nil {
-		return nil, err
+	i.supervisor.Log = func(i interface{}) {
+		//logger.Debug(i)
 	}
-
-	err = instance.netTableService.Init(discovery.ctx, instance)
-	if err != nil {
-		return nil, err
-	}
-
-	err = instance.upNpService.Init(discovery.ctx, instance)
-	if err != nil {
-		return nil, err
-	}
-
-	err = instance.StunService.Init(discovery.ctx, instance)
-	if err != nil {
-		return nil, err
-	}
-
-	err = instance.discoveryDHT.Init(discovery.ctx, instance)
-	if err != nil {
-		return nil, err
-	}
-
-	err = instance.discoveryIRC.Init(discovery.ctx, instance)
-	if err != nil {
-		return nil, err
-	}
-
-	err = instance.discoveryMDNS.Init(discovery.ctx, instance)
-	if err != nil {
-		return nil, err
-	}
-
-	return instance, nil
+	i.listenerService.localNode = i
+	i.supervisor.Add(&i.listenerService, supervisor.Permanent)
+	i.netTableService.localNode = i
+	i.supervisor.Add(&i.netTableService, supervisor.Transient)
+	i.upNpService.localNode = i
+	i.supervisor.Add(&i.upNpService, supervisor.Temporary)
+	i.StunService.localNode = i
+	i.supervisor.Add(&i.StunService, supervisor.Temporary)
+	i.discoveryDHT.localNode = i
+	i.supervisor.Add(&i.discoveryDHT, supervisor.Permanent)
+	i.discoveryIRC.localNode = i
+	i.supervisor.Add(&i.discoveryIRC, supervisor.Permanent)
+	i.discoveryMDNS.localNode = i
+	i.supervisor.Add(&i.discoveryMDNS, supervisor.Permanent)
+	numServices := len(i.supervisor.Services())
+	i.wg.Add(numServices)
+	go i.supervisor.Serve(discovery.ctx)
+	i.wg.Wait()
+	i.wg = nil
+	return i, i.lastError
 }
 
 func (ln *LocalNode) sendPeerInfo(w io.Writer) error {

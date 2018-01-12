@@ -22,9 +22,13 @@ type DiscoveryIRC struct {
 	logger *logger.Logger
 }
 
-func (d *DiscoveryIRC) Init(ctx context.Context, ln *LocalNode) (err error) {
+func (d *DiscoveryIRC) init(ctx context.Context) (err error) {
+	defer func() {
+		if d.localNode.wg != nil {
+			d.localNode.wg.Done()
+		}
+	}()
 	d.logger = logger.New("DiscoveryIRC")
-	d.localNode = ln
 	d.context = ctx
 	infoHash := d.localNode.discovery.network.InfoHash()
 	d.channel = "#"+hex.EncodeToString(infoHash[:])
@@ -68,21 +72,15 @@ func (d *DiscoveryIRC) Init(ctx context.Context, ln *LocalNode) (err error) {
 		}
 	})
 	err = d.connection.Connect(IRC_SERVER)
-	go d.Run()
 	return err
 }
 
-func (d *DiscoveryIRC) Stop() {
-	if d.connection != nil && d.connection.Connected() {
-		d.connection.Disconnect()
+func (d *DiscoveryIRC) Serve(ctx context.Context) {
+	if err := d.init(ctx); err != nil {
+		d.localNode.lastError = err
+		panic(err)
 	}
-}
-
-func (d *DiscoveryIRC) Run() {
-	defer func () {
-		d.logger.Info("Stopping...")
-		d.Stop()
-	}()
+	defer d.Stop()
 	retries := 0
 	for {
 		select {
@@ -105,6 +103,12 @@ func (d *DiscoveryIRC) Run() {
 			d.Advertise()
 			time.Sleep(30 * time.Second)
 		}
+	}
+}
+
+func (d *DiscoveryIRC) Stop() {
+	if d.connection != nil && d.connection.Connected() {
+		d.connection.Disconnect()
 	}
 }
 

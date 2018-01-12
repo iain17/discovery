@@ -19,6 +19,7 @@ func connect(h *net.UDPAddr, ln *LocalNode) (*RemoteNode, error) {
 
 	conn, errDial := s.Dial(h.String())
 	defer func() {
+		s.Close()
 		if !accepted && conn != nil{
 			conn.Close()
 		}

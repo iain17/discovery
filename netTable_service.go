@@ -31,9 +31,13 @@ type NetTableService struct {
 	logger *logger.Logger
 }
 
-func (nt *NetTableService) Init(ctx context.Context, ln *LocalNode) error {
+func (nt *NetTableService) init(ctx context.Context) error {
+	defer func() {
+		if nt.localNode.wg != nil {
+			nt.localNode.wg.Done()
+		}
+	}()
 	nt.logger = logger.New("NetTable")
-	nt.localNode = ln
 	nt.context = ctx
 	nt.newConn = make(chan *net.UDPAddr, BACKLOG_NEW_CONNECTION)
 	var err error
@@ -53,7 +57,6 @@ func (nt *NetTableService) Init(ctx context.Context, ln *LocalNode) error {
 	if err != nil {
 		nt.logger.Warningf("Could not restore previous connected peers: %s", err)
 	}
-	nt.Run()
 	return nil
 }
 
@@ -63,14 +66,17 @@ func evicted(_ interface{}, value interface{}) {
 	}
 }
 
-func (nt *NetTableService) Run() error {
+func (nt *NetTableService) Serve(ctx context.Context) {
+	if err := nt.init(ctx); err != nil {
+		nt.localNode.lastError = err
+		panic(err)
+	}
 	//Spawn some workers
 	for i := 0; i < CONCCURENT_NEW_CONNECTION; i++ {
 		go nt.processNewConnection()
 	}
 	//Send a heart beat to the peers we are connected to
 	go nt.heartbeat()
-	return nil
 }
 
 func (nt *NetTableService) processNewConnection() {
@@ -80,20 +86,19 @@ func (nt *NetTableService) processNewConnection() {
 		case <-nt.context.Done():
 			return
 		case host, ok := <-nt.newConn:
-			key := host.String()
-			if _, ok := nt.seen.Get(key); ok {
-				return
-			}
-			nt.seen.AddWithTTL(key, true, 15 * time.Minute)
-			nt.logger.Debugf("new potential peer %q discovered", host)
-
 			if !ok {
 				return
 			}
 
+			key := host.String()
+			if _, ok := nt.seen.Get(key); ok {
+				return
+			}
 			if nt.isBlackListed(host) {
 				continue
 			}
+			nt.seen.AddWithTTL(key, true, 15 * time.Minute)
+			nt.logger.Debugf("new potential peer %q discovered", host)
 
 			if err := nt.tryConnect(host); err != nil {
 				nt.logger.Debugf("unable connect %s err: %s", host, err)
@@ -213,6 +218,8 @@ func (nt *NetTableService) heartbeat() {
 	nt.heartbeatTicker = time.Tick(HEARTBEAT_DELAY * time.Second)
 	for {
 		select {
+		case <-nt.context.Done():
+			return
 		case _, ok := <-nt.heartbeatTicker:
 			if !ok {
 				break
@@ -249,7 +256,6 @@ func (nt *NetTableService) tryConnect(h *net.UDPAddr) error {
 }
 
 //The black list is just a list of nodes we've already tried and or are connected to.
-//TODO: Fix that we don't connect to ourselves.
 func (nt *NetTableService) addToBlackList(h *net.UDPAddr) {
 	nt.blackList.AddWithTTL(h.String(), 0, 10 * time.Minute)
 }

@@ -18,20 +18,27 @@ type ListenerService struct {
 	logger *logger.Logger
 }
 
-func (l *ListenerService) Init(ctx context.Context, ln *LocalNode) error {
+func (l *ListenerService) init(ctx context.Context) error {
+	defer func() {
+		if l.localNode.wg != nil {
+			l.localNode.wg.Done()
+		}
+	}()
 	l.logger = logger.New("listener")
-	l.localNode = ln
 	l.context = ctx
 
 	//Open a new socket on a free UDP port.
 	var err error
-	l.logger.Infof("listening on %d", ln.port)
-	l.socket, err = utp.NewSocket("udp4", fmt.Sprintf("0.0.0.0:%d", ln.port))
-	go l.Run()
+	l.logger.Infof("listening on %d", l.localNode.port)
+	l.socket, err = utp.NewSocket("udp4", fmt.Sprintf("0.0.0.0:%d", l.localNode.port))
 	return err
 }
 
-func (l *ListenerService) Run() {
+func (l *ListenerService) Serve(ctx context.Context) {
+	if err := l.init(ctx); err != nil {
+		l.localNode.lastError = err
+		panic(err)
+	}
 	defer l.Stop()
 	for {
 		select {

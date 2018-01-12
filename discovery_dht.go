@@ -19,12 +19,13 @@ type DiscoveryDHT struct {
 	logger *logger.Logger
 }
 
-func (d *DiscoveryDHT) Init(ctx context.Context, ln *LocalNode) (err error) {
-	if ln.discovery.limited {
-		return
-	}
+func (d *DiscoveryDHT) init(ctx context.Context) (err error) {
+	defer func() {
+		if d.localNode.wg != nil {
+			d.localNode.wg.Done()
+		}
+	}()
 	d.logger = logger.New("DiscoveryDHT")
-	d.localNode = ln
 	d.context = ctx
 
 	cfg := dht.NewConfig()
@@ -42,40 +43,31 @@ func (d *DiscoveryDHT) Init(ctx context.Context, ln *LocalNode) (err error) {
 	if err != nil {
 		return
 	}
-	go d.process()
-	go d.Run()
 	return
 }
 
-func (d *DiscoveryDHT) Stop() {
-	if d.node != nil {
-		d.node.Stop()
+func (d *DiscoveryDHT) Serve(ctx context.Context) {
+	if err := d.init(ctx); err != nil {
+		d.localNode.lastError = err
+		panic(err)
 	}
-}
-
-func (d *DiscoveryDHT) process() {
-	for {
-		select {
-		case <-d.context.Done():
-			return
-		default:
-			time.Sleep(10 * time.Second)//Give us time to find peers on other ways. Existing peers etc.
-			d.request()
-		}
-	}
-}
-
-func (d *DiscoveryDHT) Run() {
 	defer d.Stop()
 	if d.node == nil {
-		d.logger.Error("Can't initiate DHT.")
-		return
+		panic("Can't initiate DHT.")
 	}
-
+	ticker := time.Tick(HEARTBEAT_DELAY * time.Second)
 	for {
 		select {
 		case <-d.context.Done():
 			return
+		case _, ok := <-ticker:
+			if !ok {
+				break
+			}
+			if !d.localNode.discovery.limited {
+				d.request()
+			}
+			break
 		case r, _ := <-d.node.PeersRequestResults:
 			if !d.localNode.netTableService.isEnoughPeers() {
 				for _, peers := range r {
@@ -98,7 +90,14 @@ func (d *DiscoveryDHT) Run() {
 					}
 				}
 			}
+			break
 		}
+	}
+}
+
+func (d *DiscoveryDHT) Stop() {
+	if d.node != nil {
+		d.node.Stop()
 	}
 }
 
