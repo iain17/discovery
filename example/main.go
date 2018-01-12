@@ -34,7 +34,7 @@ func main(){
 	for {
 		d.LocalNode.SetInfo("Updated", time.Now().Format(time.RFC822))
 		logger.Info("peers:")
-		for _, peer := range d.WaitForPeers(1, 10 * time.Second) {
+		for _, peer := range d.WaitForPeers(1, 0 * time.Second) {
 			logger.Infof("%s", peer)
 		}
 		time.Sleep(5 * time.Second)

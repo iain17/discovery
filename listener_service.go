@@ -46,7 +46,9 @@ func (l *ListenerService) Serve(ctx context.Context) {
 			return
 		default:
 			conn, err := l.socket.Accept()
+			logger.Debug("New connection!")
 			if err != nil {
+				logger.Warning(err)
 				break
 			}
 

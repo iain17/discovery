@@ -51,7 +51,7 @@ func (d *DiscoveryIRC) init(ctx context.Context) (err error) {
 			return
 		}
 		message := event.Message()
-		d.logger.Debugf("Received message: %s", message)
+		//d.logger.Debugf("Received message: %s", message)
 		if strings.HasPrefix(message, IRC_PREFIX) {
 			ipPort := strings.Split(message[len(IRC_PREFIX):], ":")
 			if len(ipPort) != 2 {

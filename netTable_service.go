@@ -92,7 +92,7 @@ func (nt *NetTableService) processNewConnection() {
 
 			key := host.String()
 			if _, ok := nt.seen.Get(key); ok {
-				return
+				continue
 			}
 			if nt.isBlackListed(host) {
 				continue
