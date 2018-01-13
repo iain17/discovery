@@ -20,11 +20,6 @@ func (d *StunService) String() string {
 }
 
 func (s *StunService) init(ctx context.Context) error {
-	defer func() {
-		if s.localNode.wg != nil {
-			s.localNode.wg.Done()
-		}
-	}()
 	s.logger = logger.New(s.String())
 	s.context = ctx
 	s.client = stun.NewClientWithConnection(s.localNode.listenerService.socket)
@@ -33,11 +28,16 @@ func (s *StunService) init(ctx context.Context) error {
 
 func (s *StunService) Serve(ctx context.Context) {
 	defer s.Stop()
+	//We run last.
+	if s.localNode.wg != nil {
+		s.localNode.wg.Done()
+	}
+	s.localNode.waitTilReady()
+
 	if err := s.init(ctx); err != nil {
 		s.localNode.lastError = err
 		panic(err)
 	}
-	s.localNode.waitTilReady()
 	ticker := time.Tick(1 * time.Minute)
 	for {
 		select {

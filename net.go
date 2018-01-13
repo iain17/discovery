@@ -11,7 +11,7 @@ import (
 func connect(h *net.UDPAddr, ln *LocalNode) (*RemoteNode, error) {
 	accepted := false
 
-	conn, errDial := ln.listenerService.socket.Dial(h.String())
+	conn, errDial := ln.listenerService.socket.DialContext(ln.discovery.ctx, h.String())
 	defer func() {
 		//s.Close()
 		if !accepted && conn != nil{
@@ -21,7 +21,7 @@ func connect(h *net.UDPAddr, ln *LocalNode) (*RemoteNode, error) {
 	if errDial != nil {
 		return nil, errDial
 	}
-	conn.SetDeadline(time.Now().Add(2 * time.Second))
+	conn.SetDeadline(time.Now().Add(300 * time.Millisecond))
 
 	rn := NewRemoteNode(conn, ln)
 

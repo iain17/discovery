@@ -34,9 +34,11 @@ func (l *ListenerService) init(ctx context.Context) error {
 	//Open a new socket on a free UDP port.
 	var err error
 	l.socket, err = utp.NewSocket("udp4", fmt.Sprintf(":%d", l.localNode.port))
-	addr := l.socket.Addr().(*net.UDPAddr)
-	l.localNode.port = addr.Port
-	l.logger.Infof("listening on %d", l.localNode.port)
+	if err == nil {
+		addr := l.socket.Addr().(*net.UDPAddr)
+		l.localNode.port = addr.Port
+		l.logger.Infof("listening on %d", l.localNode.port)
+	}
 	return err
 }
 

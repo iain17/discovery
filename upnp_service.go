@@ -63,7 +63,7 @@ func (s *UPnPService) process(port int) (err error) {
 		}
 	}()
 	s.logger.Debugf("trying to map port %d...", port)
-	if err := s.mapping.AddPortMapping(port, 0, "UDP"); err == nil {
+	if err := s.mapping.AddPortMapping(port, port, "UDP"); err == nil {
 		if s.mapping.GatewayOutsideIP != "" {
 			s.localNode.ip = s.mapping.GatewayOutsideIP
 			//Disabled: Seems empty?
