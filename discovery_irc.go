@@ -87,16 +87,17 @@ func (d *DiscoveryIRC) Serve(ctx context.Context) {
 	}
 	d.localNode.waitTilReady()
 	retries := 0
+	ticker := time.Tick(30 * time.Second)
 	for {
 		select {
 		case <-d.context.Done():
 			return
-		default:
+		case <-ticker:
 			if !d.connection.Connected() {
 				if retries > 10 {
 					return
 				}
-				time.Sleep(1 * time.Second)
+				time.Sleep(5 * time.Second)
 				d.logger.Warning("Reconnecting...")
 				err := d.connection.Connect(IRC_SERVER)
 				if err != nil {
@@ -106,7 +107,6 @@ func (d *DiscoveryIRC) Serve(ctx context.Context) {
 				continue
 			}
 			d.Advertise()
-			time.Sleep(30 * time.Second)
 		}
 	}
 }

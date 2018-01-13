@@ -42,17 +42,17 @@ func main(){
 	}
 	host, _ := os.Hostname()
 	d.LocalNode.SetInfo("host", host)
+	ticker := time.Tick(5 * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		default:
+		case <-ticker:
 			d.LocalNode.SetInfo("Updated", time.Now().Format(time.RFC822))
 			logger.Info("peers:")
 			for _, peer := range d.WaitForPeers(1, 0*time.Second) {
 				logger.Infof("%s", peer)
 			}
-			time.Sleep(5 * time.Second)
 		}
 	}
 }

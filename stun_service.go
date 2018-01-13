@@ -38,16 +38,16 @@ func (s *StunService) Serve(ctx context.Context) {
 		panic(err)
 	}
 	s.localNode.waitTilReady()
+	ticker := time.Tick(1 * time.Minute)
 	for {
 		select {
 		case <-s.context.Done():
 			return
-		default:
+		case <-ticker:
 			err := s.process()
 			if err != nil {
 				s.logger.Debugf("error on forwarding process, %v", err)
 			}
-			time.Sleep(time.Minute)
 		}
 	}
 }
