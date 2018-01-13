@@ -10,6 +10,7 @@ import (
 	"github.com/iain17/framed"
 	"cirello.io/supervisor"
 	"sync"
+	"github.com/iain17/freeport"
 )
 
 type LocalNode struct {
@@ -17,6 +18,7 @@ type LocalNode struct {
 	discovery *Discovery
 	ip        string //Gets filled in by stun service.
 	port      int
+	outgoingPort      int
 	wg		  *sync.WaitGroup
 	lastError error
 	supervisor supervisor.Supervisor
@@ -39,22 +41,20 @@ func newLocalNode(discovery *Discovery) (*LocalNode, error) {
 			info:   map[string]string{},
 		},
 		discovery: discovery,
-		port:      -1,
+		port:      freeport.GetPortRange("udp", PORT_RANGE),
 		wg: &sync.WaitGroup{},
 	}
-	i.supervisor.Log = func(i interface{}) {
-		logger.Info(i)
+	i.supervisor.Log = func(s interface{}) {
+		logger.Debugf("[supervisor]: %s", s)
 	}
-	//i.supervisor.MaxRestarts = 1
-
 	i.upNpService.localNode = i
 	i.supervisor.Add(&i.upNpService, supervisor.Temporary)
 	i.StunService.localNode = i
 	i.supervisor.Add(&i.StunService, supervisor.Temporary)
-	//if !i.discovery.limited {
-	//	i.discoveryDHT.localNode = i
-	//	i.supervisor.Add(&i.discoveryDHT, supervisor.Permanent)
-	//}
+	if !i.discovery.limited {
+		i.discoveryDHT.localNode = i
+		i.supervisor.Add(&i.discoveryDHT, supervisor.Permanent)
+	}
 	i.discoveryIRC.localNode = i
 	i.supervisor.Add(&i.discoveryIRC, supervisor.Permanent)
 	i.discoveryMDNS.localNode = i

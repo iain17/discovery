@@ -7,6 +7,7 @@ import (
 	"github.com/iain17/discovery/pb"
 	"github.com/iain17/logger"
 	"errors"
+	"fmt"
 )
 
 type ListenerService struct {
@@ -32,7 +33,7 @@ func (l *ListenerService) init(ctx context.Context) error {
 
 	//Open a new socket on a free UDP port.
 	var err error
-	l.socket, err = utp.NewSocket("udp4", ":0")
+	l.socket, err = utp.NewSocket("udp4", fmt.Sprintf(":%d", l.localNode.port))
 	addr := l.socket.Addr().(*net.UDPAddr)
 	l.localNode.port = addr.Port
 	l.logger.Infof("listening on %d", l.localNode.port)
@@ -53,7 +54,6 @@ func (l *ListenerService) Serve(ctx context.Context) {
 		default:
 			l.logger.Info("Listing for new connections")
 			conn, err := l.socket.Accept()
-			logger.Debug("New connection!")
 			if err != nil {
 				logger.Warning(err)
 				break
@@ -70,7 +70,6 @@ func (l *ListenerService) Serve(ctx context.Context) {
 			}
 		}
 	}
-	logger.Info("wut")
 }
 
 func (l *ListenerService) Stop() {
