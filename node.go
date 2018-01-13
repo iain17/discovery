@@ -19,26 +19,26 @@ func (n *Node) String() string {
 }
 
 func (n *Node) SetInfo(key string, value string) {
-	//n.infoMutex.Lock()
+	n.infoMutex.Lock()
 	n.info[key] = value
-	//n.infoMutex.Unlock()
+	n.infoMutex.Unlock()
 }
 
 func (n *Node) SetMapInfo(info map[string]string) {
-	//n.infoMutex.Lock()
+	n.infoMutex.Lock()
 	n.info = info
-	//n.infoMutex.Unlock()
+	n.infoMutex.Unlock()
 }
 
 func (n *Node) GetInfo(key string) string {
-	//n.infoMutex.Lock()
-	//defer n.infoMutex.Unlock()
+	n.infoMutex.Lock()
+	defer n.infoMutex.Unlock()
 	return n.info[key]
 }
 
 func (n *Node) Initialize(info *pb.DPeerInfo) {
-	//n.infoMutex.Lock()
+	n.infoMutex.Lock()
 	n.id = info.Id
 	n.info = info.Info
-	//n.infoMutex.Unlock()
+	n.infoMutex.Unlock()
 }

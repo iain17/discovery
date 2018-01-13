@@ -19,13 +19,17 @@ type DiscoveryDHT struct {
 	logger *logger.Logger
 }
 
+func (d *DiscoveryDHT) String() string {
+	return "DiscoveryDHT"
+}
+
 func (d *DiscoveryDHT) init(ctx context.Context) (err error) {
 	defer func() {
 		if d.localNode.wg != nil {
 			d.localNode.wg.Done()
 		}
 	}()
-	d.logger = logger.New("DiscoveryDHT")
+	d.logger = logger.New(d.String())
 	d.context = ctx
 
 	cfg := dht.NewConfig()
@@ -47,11 +51,12 @@ func (d *DiscoveryDHT) init(ctx context.Context) (err error) {
 }
 
 func (d *DiscoveryDHT) Serve(ctx context.Context) {
+	defer d.Stop()
 	if err := d.init(ctx); err != nil {
 		d.localNode.lastError = err
 		panic(err)
 	}
-	defer d.Stop()
+	d.localNode.waitTilReady()
 	if d.node == nil {
 		panic("Can't initiate DHT.")
 	}
@@ -64,9 +69,7 @@ func (d *DiscoveryDHT) Serve(ctx context.Context) {
 			if !ok {
 				break
 			}
-			if !d.localNode.discovery.limited {
-				d.request()
-			}
+			d.request()
 			break
 		case r, _ := <-d.node.PeersRequestResults:
 			if !d.localNode.netTableService.isEnoughPeers() {

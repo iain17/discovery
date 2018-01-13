@@ -31,13 +31,17 @@ type NetTableService struct {
 	logger *logger.Logger
 }
 
+func (d *NetTableService) String() string {
+	return "NetTable"
+}
+
 func (nt *NetTableService) init(ctx context.Context) error {
 	defer func() {
 		if nt.localNode.wg != nil {
 			nt.localNode.wg.Done()
 		}
 	}()
-	nt.logger = logger.New("NetTable")
+	nt.logger = logger.New(nt.String())
 	nt.context = ctx
 	nt.newConn = make(chan *net.UDPAddr, BACKLOG_NEW_CONNECTION)
 	var err error
@@ -71,12 +75,13 @@ func (nt *NetTableService) Serve(ctx context.Context) {
 		nt.localNode.lastError = err
 		panic(err)
 	}
+	nt.localNode.waitTilReady()
 	//Spawn some workers
 	for i := 0; i < CONCCURENT_NEW_CONNECTION; i++ {
 		go nt.processNewConnection()
 	}
 	//Send a heart beat to the peers we are connected to
-	go nt.heartbeat()
+	nt.heartbeat()
 }
 
 func (nt *NetTableService) processNewConnection() {

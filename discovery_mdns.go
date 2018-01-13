@@ -16,13 +16,17 @@ type DiscoveryMDNS struct {
 	logger *logger.Logger
 }
 
+func (d *DiscoveryMDNS) String() string {
+	return "DiscoveryMDNS"
+}
+
 func (d *DiscoveryMDNS) init(ctx context.Context) (err error) {
 	defer func() {
 		if d.localNode.wg != nil {
 			d.localNode.wg.Done()
 		}
 	}()
-	d.logger = logger.New("DiscoveryMDNS")
+	d.logger = logger.New(d.String())
 	d.context = ctx
 	if err != nil {
 		return err
@@ -39,11 +43,12 @@ func (d *DiscoveryMDNS) init(ctx context.Context) (err error) {
 }
 
 func (d *DiscoveryMDNS) Serve(ctx context.Context) {
+	defer d.Stop()
 	if err := d.init(ctx); err != nil {
 		d.localNode.lastError = err
 		panic(err)
 	}
-	defer d.Stop()
+	d.localNode.waitTilReady()
 	entriesCh := make(chan *zeroconf.ServiceEntry)
 	err := d.resolver.Browse(d.context, SERVICE, "", entriesCh)
 	if err != nil {

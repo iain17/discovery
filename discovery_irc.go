@@ -22,13 +22,17 @@ type DiscoveryIRC struct {
 	logger *logger.Logger
 }
 
+func (d *DiscoveryIRC) String() string {
+	return "DiscoveryIRC"
+}
+
 func (d *DiscoveryIRC) init(ctx context.Context) (err error) {
 	defer func() {
 		if d.localNode.wg != nil {
 			d.localNode.wg.Done()
 		}
 	}()
-	d.logger = logger.New("DiscoveryIRC")
+	d.logger = logger.New(d.String())
 	d.context = ctx
 	infoHash := d.localNode.discovery.network.InfoHash()
 	d.channel = "#"+hex.EncodeToString(infoHash[:])
@@ -76,11 +80,12 @@ func (d *DiscoveryIRC) init(ctx context.Context) (err error) {
 }
 
 func (d *DiscoveryIRC) Serve(ctx context.Context) {
+	defer d.Stop()
 	if err := d.init(ctx); err != nil {
 		d.localNode.lastError = err
 		panic(err)
 	}
-	defer d.Stop()
+	d.localNode.waitTilReady()
 	retries := 0
 	for {
 		select {

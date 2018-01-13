@@ -15,6 +15,10 @@ type UPnPService struct {
 	context context.Context
 }
 
+func (d *UPnPService) String() string {
+	return "UpNp"
+}
+
 func (s *UPnPService) init(ctx context.Context) error {
 	defer func() {
 		if s.localNode.wg != nil {
@@ -22,7 +26,7 @@ func (s *UPnPService) init(ctx context.Context) error {
 		}
 	}()
 	s.mapping = new(upnp.Upnp)
-	s.logger = logger.New("UpNp")
+	s.logger = logger.New(s.String())
 	s.context = ctx
 	return nil
 }
@@ -32,11 +36,12 @@ func (s *UPnPService) Stop() {
 }
 
 func (s *UPnPService) Serve(ctx context.Context) {
+	defer s.Stop()
 	if err := s.init(ctx); err != nil {
 		s.localNode.lastError = err
 		panic(err)
 	}
-	defer s.Stop()
+	s.localNode.waitTilReady()
 	for {
 		select {
 		case <-s.context.Done():

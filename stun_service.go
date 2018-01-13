@@ -15,25 +15,29 @@ type StunService struct {
 	context context.Context
 }
 
+func (d *StunService) String() string {
+	return "Stun"
+}
+
 func (s *StunService) init(ctx context.Context) error {
 	defer func() {
 		if s.localNode.wg != nil {
 			s.localNode.wg.Done()
 		}
 	}()
-	s.logger = logger.New("Stun")
+	s.logger = logger.New(s.String())
 	s.context = ctx
 	s.client = stun.NewClientWithConnection(s.localNode.listenerService.socket)
 	return nil
 }
 
 func (s *StunService) Serve(ctx context.Context) {
+	defer s.Stop()
 	if err := s.init(ctx); err != nil {
 		s.localNode.lastError = err
 		panic(err)
 	}
-	defer s.Stop()
-
+	s.localNode.waitTilReady()
 	for {
 		select {
 		case <-s.context.Done():

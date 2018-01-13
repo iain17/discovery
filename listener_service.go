@@ -4,7 +4,6 @@ import (
 	"github.com/anacrolix/utp"
 	"net"
 	"context"
-	"fmt"
 	"github.com/iain17/discovery/pb"
 	"github.com/iain17/logger"
 	"errors"
@@ -18,33 +17,41 @@ type ListenerService struct {
 	logger *logger.Logger
 }
 
+func (d *ListenerService) String() string {
+	return "listener"
+}
+
 func (l *ListenerService) init(ctx context.Context) error {
 	defer func() {
 		if l.localNode.wg != nil {
 			l.localNode.wg.Done()
 		}
 	}()
-	l.logger = logger.New("listener")
+	l.logger = logger.New(l.String())
 	l.context = ctx
 
 	//Open a new socket on a free UDP port.
 	var err error
+	l.socket, err = utp.NewSocket("udp4", ":0")
+	addr := l.socket.Addr().(*net.UDPAddr)
+	l.localNode.port = addr.Port
 	l.logger.Infof("listening on %d", l.localNode.port)
-	l.socket, err = utp.NewSocket("udp4", fmt.Sprintf("0.0.0.0:%d", l.localNode.port))
 	return err
 }
 
 func (l *ListenerService) Serve(ctx context.Context) {
+	defer l.Stop()
 	if err := l.init(ctx); err != nil {
 		l.localNode.lastError = err
 		panic(err)
 	}
-	defer l.Stop()
+
 	for {
 		select {
 		case <-l.context.Done():
 			return
 		default:
+			l.logger.Info("Listing for new connections")
 			conn, err := l.socket.Accept()
 			logger.Debug("New connection!")
 			if err != nil {
@@ -63,9 +70,11 @@ func (l *ListenerService) Serve(ctx context.Context) {
 			}
 		}
 	}
+	logger.Info("wut")
 }
 
 func (l *ListenerService) Stop() {
+	l.logger.Info("Stopping...")
 	l.socket.Close()
 }
 
