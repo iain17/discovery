@@ -1,7 +1,7 @@
 package discovery
 
 import (
-	"github.com/nictuku/dht"
+	"github.com/iain17/dht-1"
 	"context"
 	"time"
 	"net"
@@ -33,10 +33,11 @@ func (d *DiscoveryDHT) init(ctx context.Context) (err error) {
 	d.context = ctx
 
 	cfg := dht.NewConfig()
-	cfg.Port = d.localNode.port + PORT_RANGE
+	cfg.Port = d.localNode.port
 	cfg.NumTargetPeers = d.localNode.discovery.max
 	cfg.MaxNodes = 100
 	d.node, err = dht.New(cfg)
+	d.node.InitExistingSocket(d.localNode.listenerService.listener.(*net.UDPConn))
 
 	ih := d.localNode.discovery.network.InfoHash()
 	d.ih, err = dht.DecodeInfoHash(hex.EncodeToString(ih[:]))
@@ -106,5 +107,5 @@ func (d *DiscoveryDHT) Stop() {
 
 func (d *DiscoveryDHT) request() {
 	d.logger.Debugf("sending request '%s'", d.ih.String())
-	d.node.PeersRequest(string(d.ih), !d.localNode.netTableService.isEnoughPeers())
+	d.node.PeersRequest(string(d.ih), true)
 }
