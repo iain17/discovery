@@ -67,8 +67,6 @@ func newLocalNode(discovery *Discovery) (*LocalNode, error) {
 	numServices := len(i.supervisor.Services())
 	i.wg.Add(numServices)
 	go i.supervisor.Serve(discovery.ctx)
-	i.waitTilReady()
-	i.wg = nil
 	return i, i.lastError
 }
 
@@ -76,6 +74,7 @@ func newLocalNode(discovery *Discovery) (*LocalNode, error) {
 func (ln *LocalNode) waitTilReady() {
 	if ln.wg != nil {
 		ln.wg.Wait()
+		ln.wg = nil
 	}
 }
 
@@ -110,8 +109,10 @@ func (ln *LocalNode) SetInfo(key string, value string) {
 	ln.infoMutex.Lock()
 	defer ln.infoMutex.Unlock()
 
-	ln.info[key] = value
-	for _, peer := range ln.netTableService.GetPeers() {
-		go ln.sendPeerInfo(peer.conn)
+	if ln.wg == nil {
+		ln.info[key] = value
+		for _, peer := range ln.netTableService.GetPeers() {
+			go ln.sendPeerInfo(peer.conn)
+		}
 	}
 }
