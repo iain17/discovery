@@ -8,8 +8,6 @@ import (
 	"github.com/iain17/logger"
 	"errors"
 	"fmt"
-	"github.com/iain17/timeout"
-	"time"
 )
 
 type ListenerService struct {
@@ -47,12 +45,13 @@ func (l *ListenerService) init(ctx context.Context) error {
 	l.localNode.port = addr.Port
 	l.logger.Infof("listening on %d", l.localNode.port)
 
-	timeout.Do(func(ctx context.Context) {
-		stunErr := l.localNode.StunService.Serve(ctx)
-		if stunErr != nil {
-			logger.Warningf("Stun error: %s", stunErr)
-		}
-	}, 2 * time.Second)
+	//Disabled: Just fucks with the initial connections.
+	//timeout.Do(func(ctx context.Context) {
+	//	stunErr := l.localNode.StunService.Serve(ctx)
+	//	if stunErr != nil {
+	//		logger.Warningf("Stun error: %s", stunErr)
+	//	}
+	//}, 2 * time.Second)
 	return err
 }
 
