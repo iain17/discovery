@@ -47,8 +47,6 @@ func newLocalNode(discovery *Discovery) (*LocalNode, error) {
 	}
 	i.upNpService.localNode = i
 	i.supervisor.AddService(&i.upNpService, supervisor.Temporary)
-	i.StunService.localNode = i
-	i.supervisor.AddService(&i.StunService, supervisor.Temporary)
 	if !i.discovery.limited {
 		i.discoveryDHT.localNode = i
 		i.supervisor.AddService(&i.discoveryDHT, supervisor.Permanent)
@@ -60,6 +58,9 @@ func newLocalNode(discovery *Discovery) (*LocalNode, error) {
 
 	i.netTableService.localNode = i
 	i.supervisor.AddService(&i.netTableService, supervisor.Transient)
+
+	//Listener and stun service
+	i.StunService.localNode = i
 	i.listenerService.localNode = i
 	i.supervisor.AddService(&i.listenerService, supervisor.Permanent)
 
