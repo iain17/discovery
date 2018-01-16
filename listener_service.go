@@ -75,14 +75,14 @@ func (l *ListenerService) Serve(ctx context.Context) {
 				break
 			}
 
-			l.logger.Debugf("new connection from %q", conn.RemoteAddr().String())
+			l.logger.Debugf("new connection from %s", conn.RemoteAddr().String())
 
 			if err = l.process(conn); err != nil {
 				conn.Close()
 				if err.Error() == "peer reset" || err.Error() == "we can't add ourselves" {
 					continue
 				}
-				l.logger.Errorf("error on process, %v", err)
+				l.logger.Warningf("[%s] error on processing new connection, %s", conn.RemoteAddr().String(), err)
 			}
 		}
 	}
