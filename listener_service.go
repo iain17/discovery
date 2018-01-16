@@ -69,7 +69,6 @@ func (l *ListenerService) Serve(ctx context.Context) {
 		case <-l.context.Done():
 			return
 		default:
-			l.logger.Info("Listing for new connections")
 			conn, err := l.socket.Accept()
 			if err != nil {
 				logger.Warning(err)
