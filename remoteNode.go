@@ -64,9 +64,19 @@ func (rn *RemoteNode) Send(message string) error {
 	return framed.Write(rn.conn, transfer)
 }
 
-func (rn *RemoteNode) Close() {
+func (rn *RemoteNode) Close() error {
 	defer rn.conn.Close()
-	rn.logger.Debug("closing...")
+	rn.logger.Debug("Closing")
+	transfer, err := proto.Marshal(&pb.Message{
+		Version: env.VERSION,
+		Msg: &pb.Message_Shutdown{
+			Shutdown: &pb.Shutdown{},
+		},
+	})
+	if err != nil {
+		return err
+	}
+	return framed.Write(rn.conn, transfer)
 }
 
 func (rn *RemoteNode) listen(ln *LocalNode) {
@@ -98,6 +108,9 @@ func (rn *RemoteNode) listen(ln *LocalNode) {
 			rn.logger.Debug("heart beat received")
 			rn.lastHeartbeat = time.Now()
 			break
+		case *pb.Message_Shutdown:
+			rn.conn.Close()
+			return
 		case *pb.Message_Peers:
 			msg := packet.GetMsg().(*pb.Message_Peers).Peers
 			rn.receiveSharedPeers(msg.Peers)

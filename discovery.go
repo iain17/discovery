@@ -45,9 +45,10 @@ func New(ctx context.Context, network *network.Network, max int, limitedConnecti
 	return self, nil
 }
 
+//Make sure you call this before you quit, Just signalling the context won't be enough.
 func (d *Discovery) Stop() {
-	d.cancel()
 	d.LocalNode.netTableService.Stop()
+	d.cancel()
 }
 
 func (d *Discovery) WaitForPeers(num int, expire time.Duration) []*RemoteNode {

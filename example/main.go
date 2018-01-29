@@ -40,12 +40,14 @@ func main(){
 	if err != nil {
 		panic(err)
 	}
+
 	host, _ := os.Hostname()
 	d.LocalNode.SetInfo("host", host)
 	ticker := time.Tick(5 * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
+			d.Stop()
 			return
 		case <-ticker:
 			d.LocalNode.SetInfo("Updated", time.Now().Format(time.RFC822))

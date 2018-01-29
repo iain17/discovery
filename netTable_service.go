@@ -117,7 +117,10 @@ func (nt *NetTableService) processNewConnection() {
 
 func (nt *NetTableService) Stop() {
 	for _, peer := range nt.GetPeers() {
-		peer.Close()
+		err := peer.Close()
+		if err != nil {
+			logger.Warning(err)
+		}
 	}
 }
 

@@ -45,7 +45,7 @@ func (l *ListenerService) init(ctx context.Context) error {
 	l.localNode.port = addr.Port
 	l.logger.Infof("listening on %d", l.localNode.port)
 
-	//Disabled: Just fucks with the initial connections.
+	//Stun Disabled: Just fucks with the initial connections.
 	//timeout.Do(func(ctx context.Context) {
 	//	stunErr := l.localNode.StunService.Serve(ctx)
 	//	if stunErr != nil {
