@@ -12,13 +12,16 @@ import (
 	"strings"
 	"time"
 	"github.com/iain17/framed"
+	"sync"
 )
 
 type RemoteNode struct {
 	Node
 	conn          net.Conn
+	closed		  bool
 	ln            *LocalNode
 	lastHeartbeat time.Time
+	mutex		  sync.Mutex
 }
 
 func NewRemoteNode(conn net.Conn, ln *LocalNode) *RemoteNode {
@@ -65,7 +68,13 @@ func (rn *RemoteNode) Send(message string) error {
 }
 
 func (rn *RemoteNode) Close() error {
+	rn.mutex.Lock()
+	defer rn.mutex.Unlock()
+	if rn.closed {
+		return nil
+	}
 	defer rn.conn.Close()
+	rn.closed = true
 	rn.logger.Debug("Closing")
 	transfer, err := proto.Marshal(&pb.Message{
 		Version: env.VERSION,

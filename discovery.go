@@ -30,6 +30,9 @@ func New(ctx context.Context, network *network.Network, max int, limitedConnecti
 			}
 		}
 	}()
+	if limitedConnection {
+		CONCCURENT_NEW_CONNECTION = CONCCURENT_NEW_CONNECTION_LIMITED
+	}
 	self := &Discovery{
 		max: max,
 		ctx: ctx,
