@@ -56,6 +56,7 @@ func (d *Discovery) Stop() {
 }
 
 func (d *Discovery) WaitForPeers(num int, expire time.Duration) []*RemoteNode {
+	d.LocalNode.waitTilReady()
 	timeout.Do(func(ctx context.Context) {
 		d.LocalNode.waitTilReady()
 		for d.LocalNode.netTableService.peers.Len() < num {
