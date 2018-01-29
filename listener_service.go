@@ -73,6 +73,11 @@ func (l *ListenerService) Serve(ctx context.Context) {
 				logger.Warning(err)
 				break
 			}
+			key := conn.RemoteAddr().String()
+			if _, ok := l.localNode.netTableService.seen.Get(key); ok {
+				conn.Close()
+				continue
+			}
 
 			l.logger.Debugf("new connection from %s", conn.RemoteAddr().String())
 

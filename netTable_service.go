@@ -274,7 +274,7 @@ func (nt *NetTableService) tryConnect(h *net.UDPAddr) (err error) {
 
 //The black list is just a list of nodes we've already tried and or are connected to.
 func (nt *NetTableService) addToBlackList(h *net.UDPAddr) {
-	nt.blackList.AddWithTTL(h.String(), 0, 1 * time.Minute)
+	nt.blackList.AddWithTTL(h.String(), 0, 10 * time.Minute)
 }
 
 func (nt *NetTableService) isBlackListed(h *net.UDPAddr) bool {
