@@ -98,17 +98,21 @@ func (nt *NetTableService) processNewConnection() {
 				return
 			}
 
+			if nt.isBlackListed(host) {
+				continue
+			}
 			key := host.String()
 			if _, ok := nt.seen.Get(key); ok {
 				continue
 			}
-			if nt.isBlackListed(host) {
-				continue
-			}
-			nt.seen.AddWithTTL(key, true, 15 * time.Minute)
+			nt.seen.AddWithTTL(key, true, COOLDOWN_CONNECTION)
+
 			nt.logger.Debugf("new potential peer %q discovered", host)
 
 			if err := nt.tryConnect(host); err != nil {
+				if err.Error() == "error at waiting for their peer info: EOF" {
+					nt.seen.Remove(key)
+				}
 				nt.logger.Debugf("unable connect %s err: %s", host, err)
 			}
 		}
@@ -264,7 +268,6 @@ func (nt *NetTableService) tryConnect(h *net.UDPAddr) (err error) {
 	var rn *RemoteNode
 	rn, err = connect(h, nt.localNode)
 	if err != nil {
-		nt.addToBlackList(h)
 		return err
 	}
 	nt.logger.Debug("adding remote node...")
@@ -272,9 +275,9 @@ func (nt *NetTableService) tryConnect(h *net.UDPAddr) (err error) {
 	return err
 }
 
-//The black list is just a list of nodes we've already tried and or are connected to.
+//The black list is a list of nodes we rather not hear anything from for a while
 func (nt *NetTableService) addToBlackList(h *net.UDPAddr) {
-	nt.blackList.AddWithTTL(h.String(), 0, 10 * time.Minute)
+	nt.blackList.AddWithTTL(h.String(), 0, 1 * time.Hour)
 }
 
 func (nt *NetTableService) isBlackListed(h *net.UDPAddr) bool {

@@ -4,6 +4,7 @@ import (
 	"github.com/iain17/discovery/pb"
 	"net"
 	"time"
+	"fmt"
 )
 
 //Initiate a handshake procedure.
@@ -19,25 +20,28 @@ func connect(h *net.UDPAddr, ln *LocalNode) (*RemoteNode, error) {
 		}
 	}()
 	if errDial != nil {
-		return nil, errDial
+		return nil, fmt.Errorf("error dialing %s: %s", h.String(), errDial.Error())
 	}
-	conn.SetDeadline(time.Now().Add(300 * time.Millisecond))
+	conn.SetDeadline(time.Now().Add(1 * time.Second))
 
 	rn := NewRemoteNode(conn, ln)
 
 	//Handshake dance.
-	rn.logger.Debug("Sending our peer info")
-	ln.sendPeerInfo(rn.conn)
-
-	//They will respond by sending their peer info
+	//Wait for them to accept and send their peer info
 	rn.logger.Debug("Waiting for their peer info...")
 	peerInfo, err := pb.DecodePeerInfo(rn.conn, string(ln.discovery.network.ExportPublicKey()))
 	if err != nil {
-		rn.logger.Debug(err)
-		return nil, err
+		return nil, fmt.Errorf("error at waiting for their peer info: %s", err.Error())
 	}
 	rn.logger.Debug("Received peer info...")
 	rn.Initialize(peerInfo)
+
+	conn.SetDeadline(time.Now().Add(5 * time.Second))
+	rn.logger.Debug("Sending our peer info")
+	err = ln.sendPeerInfo(rn.conn)
+	if err != nil {
+		return nil, fmt.Errorf("error sending our peer info: %s", err.Error())
+	}
 
 	rn.logger.Info("connected!")
 	accepted = true

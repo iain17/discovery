@@ -76,7 +76,6 @@ func (rn *RemoteNode) Close() error {
 	defer rn.conn.Close()
 	rn.closed = true
 	rn.logger.Debug("Closing")
-	rn.ln.netTableService.blackList.Remove(rn.conn.RemoteAddr().String())
 	rn.ln.netTableService.seen.Remove(rn.conn.RemoteAddr().String())
 	transfer, err := proto.Marshal(&pb.Message{
 		Version: env.VERSION,

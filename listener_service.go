@@ -61,7 +61,6 @@ func (l *ListenerService) Serve(ctx context.Context) {
 		l.localNode.lastError = err
 		panic(err)
 	}
-	l.localNode.waitTilReady()
 
 	for {
 		select {
@@ -74,20 +73,22 @@ func (l *ListenerService) Serve(ctx context.Context) {
 				break
 			}
 			key := conn.RemoteAddr().String()
-			if _, ok := l.localNode.netTableService.seen.Get(key); ok {
+			if _, ok := l.localNode.netTableService.blackList.Get(key); ok {
 				conn.Close()
-				continue
+				return
 			}
 
-			l.logger.Debugf("new connection from %s", conn.RemoteAddr().String())
+			go func(conn net.Conn) {
+				l.logger.Debugf("new connection from %s", conn.RemoteAddr().String())
 
-			if err = l.process(conn); err != nil {
-				conn.Close()
-				if err.Error() == "peer reset" || err.Error() == "we can't add ourselves" {
-					continue
+				if err = l.process(conn); err != nil {
+					conn.Close()
+					if err.Error() == "peer reset" || err.Error() == "we can't add ourselves" {
+						return
+					}
+					l.logger.Warningf("[%s] error on processing new connection, %s", conn.RemoteAddr().String(), err)
 				}
-				l.logger.Warningf("[%s] error on processing new connection, %s", conn.RemoteAddr().String(), err)
-			}
+			}(conn)
 		}
 	}
 }
@@ -100,6 +101,13 @@ func (l *ListenerService) Stop() {
 //We receive a connection from a possible new peer.
 func (l *ListenerService) process(c net.Conn) error {
 	rn := NewRemoteNode(c, l.localNode)
+
+	rn.logger.Debug("Sending our peer info...")
+	err := l.localNode.sendPeerInfo(c)
+	if err != nil {
+		return err
+	}
+	rn.logger.Debug("Sent our peer info...")
 
 	rn.logger.Debug("Waiting for peer info...")
 	peerInfo, err := pb.DecodePeerInfo(c, string(l.localNode.discovery.network.ExportPublicKey()))
@@ -114,13 +122,6 @@ func (l *ListenerService) process(c net.Conn) error {
 		return nil
 	}
 	rn.logger.Debug("Received peer info...")
-
-	rn.logger.Debug("Sending our peer info...")
-	err = l.localNode.sendPeerInfo(c)
-	if err != nil {
-		return err
-	}
-	rn.logger.Debug("Sent our peer info...")
 
 	rn.Initialize(peerInfo)
 	l.localNode.netTableService.AddRemoteNode(rn)
