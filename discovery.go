@@ -19,7 +19,7 @@ type Discovery struct {
 	limited bool//Means we are on a limited connection. Means we won't advertise on DHT
 }
 
-func New(ctx context.Context, network *network.Network, max int, limitedConnection bool) (*Discovery, error) {
+func New(ctx context.Context, network *network.Network, max int, limitedConnection bool, info map[string]string) (*Discovery, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer func() {
 		if r := recover(); r != nil {
@@ -42,6 +42,7 @@ func New(ctx context.Context, network *network.Network, max int, limitedConnecti
 	}
 	var err error
 	self.LocalNode, err = newLocalNode(self)
+	self.LocalNode.info = info
 	if err != nil {
 		return nil, err
 	}

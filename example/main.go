@@ -36,21 +36,23 @@ func main(){
 	if err != nil {
 		panic(err)
 	}
-	d, err := discovery.New(ctx, n, 10, false)
+	host, _ := os.Hostname()
+	d, err := discovery.New(ctx, n, 10, false, map[string]string {
+		"host": host,
+		"example": "yes",
+	})
 	if err != nil {
 		panic(err)
 	}
 
-	host, _ := os.Hostname()
-	d.LocalNode.SetInfo("host", host)
-	ticker := time.Tick(5 * time.Second)
+	ticker := time.Tick(1 * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
 			d.Stop()
 			return
 		case <-ticker:
-			d.LocalNode.SetInfo("Updated", time.Now().Format(time.RFC822))
+			//d.LocalNode.SetInfo("Updated", time.Now().Format(time.RFC822))
 			logger.Info("peers:")
 			for _, peer := range d.WaitForPeers(1, 0*time.Second) {
 				logger.Infof("%s", peer)
