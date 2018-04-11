@@ -37,7 +37,7 @@ func main(){
 		panic(err)
 	}
 	host, _ := os.Hostname()
-	d, err := discovery.New(ctx, n, 10, false, map[string]string {
+	d, err := discovery.New(ctx, n, 10, nil,false, map[string]string {
 		"host": host,
 		"example": "yes",
 	})
