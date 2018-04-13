@@ -21,9 +21,9 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/anacrolix/go-libutp"
+  name = "github.com/iain17/go-libutp"
   packages = ["."]
-  revision = "5dd53cb61ef096fa0d98c5f791b162d303488970"
+  revision = "3fb99fdeb41e5f1d6268e5aa51f79dd43b17e4fa"
 
 [[projects]]
   branch = "master"
