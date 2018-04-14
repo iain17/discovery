@@ -43,7 +43,7 @@
     "logonce",
     "metainfo"
   ]
-  revision = "d7225aed03e22743bbce46c5ed813342d9cbaa6a"
+  revision = "39ccb140362f485a627ef644b95ed8c8409bc817"
 
 [[projects]]
   branch = "master"
