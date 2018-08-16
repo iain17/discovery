@@ -55,12 +55,12 @@ func newLocalNode(discovery *Discovery) (*LocalNode, error) {
 	}
 	i.upNpService.localNode = i
 	i.supervisor.Add(&i.upNpService, supervisor.Temporary)
-	//if !i.discovery.limited {
-	//	i.discoveryDHT.localNode = i
-	//	i.supervisor.Add(&i.discoveryDHT, supervisor.Permanent)
-	//}
-	//i.discoveryIRC.localNode = i
-	//i.supervisor.Add(&i.discoveryIRC, supervisor.Permanent)
+	if !i.discovery.limited {
+		i.discoveryDHT.localNode = i
+		i.supervisor.Add(&i.discoveryDHT, supervisor.Permanent)
+	}
+	i.discoveryIRC.localNode = i
+	i.supervisor.Add(&i.discoveryIRC, supervisor.Permanent)
 	i.discoveryMDNS.localNode = i
 	i.supervisor.Add(&i.discoveryMDNS, supervisor.Permanent)
 
