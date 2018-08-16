@@ -29,7 +29,7 @@ func (d *DiscoveryDHT) init(ctx context.Context) (err error) {
 	}()
 	d.logger = logger.New(d.String())
 	d.context = ctx
-	conn, err := net.ListenPacket("udp", ":0")
+	conn, err := net.ListenPacket("tcp", ":0")
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func (d *DiscoveryDHT) Serve(ctx context.Context) {
 			}
 			if !d.localNode.netTableService.isEnoughPeers() {
 				for _, peer := range v.Peers {
-					addr := &net.UDPAddr{
+					addr := &net.TCPAddr{
 						IP:   peer.IP[:],
 						Port: int(peer.Port),
 					}
