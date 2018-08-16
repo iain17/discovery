@@ -29,7 +29,7 @@ func (d *DiscoveryDHT) init(ctx context.Context) (err error) {
 	}()
 	d.logger = logger.New(d.String())
 	d.context = ctx
-	conn, err := net.ListenPacket("tcp", ":0")
+	conn, err := net.ListenPacket("udp", ":0")
 	if err != nil {
 		return err
 	}
