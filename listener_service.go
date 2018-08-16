@@ -14,7 +14,7 @@ type ListenerService struct {
 	localNode *LocalNode
 	context context.Context
 	listener	  net.PacketConn
-	socket    *kcp.Listener
+	socket    net.Listener
 
 	logger *logger.Logger
 }
@@ -36,13 +36,13 @@ func (l *ListenerService) init(ctx context.Context) error {
 	l.logger = logger.New(l.String())
 	l.context = ctx
 
-	stunErr := l.localNode.StunService.Serve(ctx)
-	if stunErr != nil {
-		logger.Warningf("Stun error: %s", stunErr)
-	}
+	//stunErr := l.localNode.StunService.Serve(ctx)
+	//if stunErr != nil {
+	//	logger.Warningf("Stun error: %s", stunErr)
+	//}
 
 	var err error
-	l.socket, err = kcp.ListenWithOptions(fmt.Sprintf(":%d", l.localNode.port), nil, 10, 3)
+	l.socket, err = kcp.Listen(fmt.Sprintf(":%d", l.localNode.port))
 	if err != nil {
 		return fmt.Errorf("could not listen: %s", err.Error())
 	}

@@ -16,14 +16,14 @@ func TestNetTableService_GetPeers(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	app1, err := New(ctx, n, 10, false)
+	app1, err := New(ctx, n, 10, nil,false, map[string]string{})
 	if err != nil {
 		panic(err)
 	}
 
 	time.Sleep(1 * time.Second)
 
-	app2, err := New(ctx, n, 10, false)
+	app2, err :=  New(ctx, n, 10, nil,false, map[string]string{})
 	if err != nil {
 		panic(err)
 	}

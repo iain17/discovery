@@ -12,8 +12,8 @@ import (
 //See (l *ListenerService) process(c net.Conn) error for the receiving side.
 func connect(h *net.UDPAddr, ln *LocalNode) (*RemoteNode, error) {
 	accepted := false
-
-	conn, errDial := kcp.DialWithOptions(h.String(), nil, 10, 3)
+	addr := h.String()
+	conn, errDial := kcp.Dial(addr)
 	defer func() {
 		//s.Close()
 		if !accepted && conn != nil{
@@ -23,8 +23,7 @@ func connect(h *net.UDPAddr, ln *LocalNode) (*RemoteNode, error) {
 	if errDial != nil {
 		return nil, fmt.Errorf("error dialing %s: %s", h.String(), errDial.Error())
 	}
-	conn.SetNoDelay(1, 40, 1, 1)
-	conn.SetDeadline(time.Now().Add(1 * time.Second))
+	//conn.SetDeadline(time.Now().Add(1 * time.Second))
 
 	rn := NewRemoteNode(conn, ln)
 
